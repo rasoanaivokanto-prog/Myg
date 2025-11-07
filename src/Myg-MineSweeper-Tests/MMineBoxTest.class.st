@@ -15,3 +15,8 @@ MMineBoxTest >> testClickInAtAt [
 	(field boxAt: 1 at: 3) click.
 	self assert: field gameEnded
 ]
+
+{ #category : 'tests-clicking' }
+MMineBoxTest >> testPushCathy [
+	^Transcript show: 'Helllo'. 
+]
