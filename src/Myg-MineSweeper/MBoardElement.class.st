@@ -24,35 +24,39 @@ Internal Representation and Key Implementation Points.
     Implementation Points
 "
 Class {
-	#name : #MBoardElement,
-	#superclass : #BlElement,
+	#name : 'MBoardElement',
+	#superclass : 'BlElement',
 	#instVars : [
-		'game'
+		'game',
+		'selectionsLabel',
+		'header'
 	],
-	#category : #'Myg-MineSweeper-UI'
+	#category : 'Myg-MineSweeper-UI',
+	#package : 'Myg-MineSweeper',
+	#tag : 'UI'
 }
 
-{ #category : #'instance creation' }
+{ #category : 'instance creation' }
 MBoardElement class >> launchLarge [
 	^ self withMatrixTest5x5WithMagnifier: 2
 ]
 
-{ #category : #'instance creation' }
+{ #category : 'instance creation' }
 MBoardElement class >> launchRegular [
 	^ self withMatrixTest5x5 
 ]
 
-{ #category : #'instance creation' }
+{ #category : 'instance creation' }
 MBoardElement class >> launchSmall [
 	^ self withMatrixTest5x5WithMagnifier: 0.5
 ]
 
-{ #category : #'instance creation' }
+{ #category : 'instance creation' }
 MBoardElement class >> launchVeryLarge [
 	^ self withMatrixTest5x5WithMagnifier: 4
 ]
 
-{ #category : #'instance creation' }
+{ #category : 'instance creation' }
 MBoardElement class >> open [
 	<script>
 
@@ -113,13 +117,13 @@ MBoardElement class >> open [
 	space show
 ]
 
-{ #category : #'instance creation' }
+{ #category : 'instance creation' }
 MBoardElement class >> openWithModel: aModel [
 
 	^ self openWithModel: aModel withMagnifier: 1
 ]
 
-{ #category : #'instance creation' }
+{ #category : 'instance creation' }
 MBoardElement class >> openWithModel: aModel withMagnifier: aNumber [
 
 	| aGameElement space |
@@ -141,54 +145,87 @@ MBoardElement class >> openWithModel: aModel withMagnifier: aNumber [
 	^ space
 ]
 
-{ #category : #execution }
+{ #category : 'execution' }
 MBoardElement class >> withMatrixForField [
 
 	^ self openWithModel: MBoard matrixForField
 ]
 
-{ #category : #execution }
+{ #category : 'execution' }
 MBoardElement class >> withMatrixForFieldWithMagnifier: aNumber [
 
 	^ self openWithModel: MBoard matrixForField withMagnifier: aNumber 
 ]
 
-{ #category : #execution }
+{ #category : 'execution' }
 MBoardElement class >> withMatrixTest5x5 [
 
 	^ self openWithModel: MBoard matrixTest5x5
 ]
 
-{ #category : #execution }
+{ #category : 'execution' }
 MBoardElement class >> withMatrixTest5x5WithMagnifier: aNumber [
 
 	^ self openWithModel: MBoard matrixTest5x5 withMagnifier: aNumber 
 ]
 
-{ #category : #accessing }
+{ #category : 'accessing' }
 MBoardElement >> game [ 
 	^ game
 ]
 
-{ #category : #accessing }
+{ #category : 'accessing' }
 MBoardElement >> game: aMBoard [
 
 	game := aMBoard.
+
+	game announcer
+		when: MBoxClickedAnnouncement
+		send: #updateSelectionsLabel
+		to: self.
+	game announcer
+		when: MBoxClickedAnnouncement
+		send: #incrementSelections
+		to: game.
+
 	self padding: (BlInsets all: 5 * game magnifier).
 	self layout columnCount: game width.
+
+	selectionsLabel := BlTextElement new.
+	selectionsLabel text: 'Sélections : 0' asRopedText.
+	"header addChild: selectionsLabel. "
+	self addChild: selectionsLabel.
+
+
 	game grid do: [ :aBox |
-		| boxElement |
-		boxElement := MBoxElement createWithBox: aBox.
-		self addChild: boxElement ]
+			| boxElement |
+			boxElement := MBoxElement createWithBox: aBox.
+			self addChild: boxElement ]
 ]
 
-{ #category : #initialization }
+{ #category : 'initialization' }
 MBoardElement >> initialize [
 
-	super initialize.
-	self background: (BlBackground paint: Color veryVeryLightGray).
-	self layout: (BlGridLayout horizontal cellSpacing: 5).
-	self constraintsDo: [ :aLayoutConstraints |
-		aLayoutConstraints horizontal fitContent.
-		aLayoutConstraints vertical fitContent ]
+	super initialize. 
+	header := BlElement new. 
+	header layout: BlLinearLayout horizontal. 
+	header constraintsDo: [:c | c horizontal fitContent. c vertical fitContent ]. 
+	
+	self background: (BlBackground paint: Color veryVeryLightGray). 
+	self layout: (BlGridLayout horizontal cellSpacing: 5). 
+	self constraintsDo: [ :aLayoutConstraints | aLayoutConstraints horizontal fitContent. aLayoutConstraints vertical fitContent ].  
+	self addChild: header.
+	"selectionsLabel := BlTextElement new. 
+	selectionsLabel text: 'Sélections : 0' asRopedText. 
+	""header addChild: selectionsLabel. ""
+	self addChild:  selectionsLabel."
+]
+
+{ #category : 'as yet unclassified' }
+MBoardElement >> updateSelectionsLabel [
+      selectionsLabel text: ('Sélections : ', game numberOfSelections printString) asRopedText.
+
+
+
+
 ]
