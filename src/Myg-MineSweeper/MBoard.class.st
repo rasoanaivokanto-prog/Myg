@@ -45,12 +45,45 @@ MBoard class >> matrixForField [
 			   yourself)
 ]
 
+{ #category : 'as yet unclassified' }
+MBoard class >> matrixLarge [
+    "16x16"
+    ^ self matrixWithWidth: 16 height: 16
+]
+
+{ #category : 'as yet unclassified' }
+MBoard class >> matrixMedium [
+    "10x10"
+    ^ self matrixWithWidth: 10 height: 10
+]
+
+{ #category : 'as yet unclassified' }
+MBoard class >> matrixSmall [
+    "5x5"
+    ^ self matrixWithWidth: 5 height: 5
+]
+
 { #category : 'instance creation' }
 MBoard class >> matrixTest5x5 [
 
 	^ self createWithMatrix:
 		  (CTNewArray2D width: 5 height: 5 tabulate: [ :column :row |
 			   MBox randomCase ])
+]
+
+{ #category : 'as yet unclassified' }
+MBoard class >> matrixVeryLarge [
+    "20x20"
+    ^ self matrixWithWidth: 20 height: 20
+]
+
+{ #category : 'as yet unclassified' }
+MBoard class >> matrixWithWidth: width height: height [
+    ^ self createWithMatrix:
+        (CTNewArray2D 
+            width: width 
+            height: height 
+            tabulate: [ :column :row | MBox randomCase ])
 ]
 
 { #category : 'accessing' }

@@ -41,6 +41,27 @@ MBoardElement class >> launchLarge [
 	^ self withMatrixTest5x5WithMagnifier: 2
 ]
 
+{ #category : 'as yet unclassified' }
+MBoardElement class >> launchLarge16x16 [
+    ^ self openWithModel: MBoard matrixLarge
+
+]
+
+{ #category : 'as yet unclassified' }
+MBoardElement class >> launchLarge16x16WithMagnifier: aNumber [
+    ^ self openWithModel: MBoard matrixLarge withMagnifier: aNumber
+]
+
+{ #category : 'as yet unclassified' }
+MBoardElement class >> launchMedium10x10 [
+    ^ self openWithModel: MBoard matrixMedium
+]
+
+{ #category : 'as yet unclassified' }
+MBoardElement class >> launchMedium10x10WithMagnifier: aNumber [
+    ^ self openWithModel: MBoard matrixMedium withMagnifier: aNumber
+]
+
 { #category : 'instance creation' }
 MBoardElement class >> launchRegular [
 	^ self withMatrixTest5x5 
@@ -51,9 +72,29 @@ MBoardElement class >> launchSmall [
 	^ self withMatrixTest5x5WithMagnifier: 0.5
 ]
 
+{ #category : 'as yet unclassified' }
+MBoardElement class >> launchSmall5x5 [
+    ^ self openWithModel: MBoard matrixSmall
+]
+
+{ #category : 'as yet unclassified' }
+MBoardElement class >> launchSmall5x5WithMagnifier: aNumber [
+    ^ self openWithModel: MBoard matrixSmall withMagnifier: aNumber
+]
+
 { #category : 'instance creation' }
 MBoardElement class >> launchVeryLarge [
 	^ self withMatrixTest5x5WithMagnifier: 4
+]
+
+{ #category : 'as yet unclassified' }
+MBoardElement class >> launchVeryLarge20x20 [
+    ^ self openWithModel: MBoard matrixVeryLarge
+]
+
+{ #category : 'as yet unclassified' }
+MBoardElement class >> launchVeryLarge20x20WithMagnifier: aNumber [
+    ^ self openWithModel: MBoard matrixVeryLarge withMagnifier: aNumber
 ]
 
 { #category : 'instance creation' }
@@ -169,6 +210,33 @@ MBoardElement class >> withMatrixTest5x5WithMagnifier: aNumber [
 	^ self openWithModel: MBoard matrixTest5x5 withMagnifier: aNumber 
 ]
 
+{ #category : 'adding' }
+MBoardElement >> addSizeButtons [
+    | btn5 btn10 btn16 btn20 |
+    
+    btn5 := self createSizeButton: '5x5' action: [ MBoardElement launchSmall5x5 ].
+    btn10 := self createSizeButton: '10x10' action: [ MBoardElement launchMedium10x10 ].
+    btn16 := self createSizeButton: '16x16' action: [ MBoardElement launchLarge16x16 ].
+    btn20 := self createSizeButton: '20x20' action: [ MBoardElement launchVeryLarge20x20 ].
+    
+    header addChild: btn5.
+    header addChild: btn10.
+    header addChild: btn16.
+    header addChild: btn20.
+]
+
+{ #category : 'as yet unclassified' }
+MBoardElement >> createSizeButton: label action: aBlock [
+    | button |
+    button := BlTextElement new.
+    button text: label asRopedText.
+    button padding: (BlInsets all: 5).
+    button margin: (BlInsets all: 2).
+    button background: Color lightGray.
+    button addEventHandlerOn: BlClickEvent do: [ :event | aBlock value ].
+    ^ button
+]
+
 { #category : 'accessing' }
 MBoardElement >> game [ 
 	^ game
@@ -203,6 +271,8 @@ MBoardElement >> initialize [
 	header := BlElement new. 
 	header layout: BlLinearLayout horizontal. 
 	header constraintsDo: [:c | c horizontal fitContent. c vertical fitContent ]. 
+	
+	 self addSizeButtons.
 	
 	self background: (BlBackground paint: Color veryVeryLightGray). 
 	self layout: (BlGridLayout horizontal cellSpacing: 5). 
