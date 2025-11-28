@@ -14,7 +14,7 @@ Class {
 MMineBox >> click [
 
 	self isFlagged ifTrue: [ ^ self ].
-	"self incrementNumberOfSelections ."
+	self board incrementSelections.
 	self announcer announce: MBoxExplosionAnnouncement new.
 	self board gameEnded ifFalse: [ self board playerLoose ]
 	

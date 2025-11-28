@@ -14,7 +14,7 @@ MSafeBox >> click [
 
 	self clicked: true.
 	self announcer announce: MBoxClickedAnnouncement new.
-	"self incrementNumberOfSelections ."
+	self board incrementSelections.
 	self propagateClick. "Here it is usefull for when there is no bomb around"
 	self board hasBeenCleared ifTrue: [ self board playerWin ]
 ]

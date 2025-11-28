@@ -192,8 +192,8 @@ MBoard >> height [
 
 { #category : 'player api' }
 MBoard >> incrementSelections [
-
-	numberOfSelections := numberOfSelections + 1
+	numberOfSelections := numberOfSelections + 1.
+	self announcer announce: MBoxClickedAnnouncement new.
 ]
 
 { #category : 'initialization' }

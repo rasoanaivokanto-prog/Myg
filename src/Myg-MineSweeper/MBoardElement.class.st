@@ -176,31 +176,24 @@ MBoardElement >> game [
 
 { #category : 'accessing' }
 MBoardElement >> game: aMBoard [
-
-	game := aMBoard.
-
-	game announcer
-		when: MBoxClickedAnnouncement
-		send: #updateSelectionsLabel
-		to: self.
-	game announcer
-		when: MBoxClickedAnnouncement
-		send: #incrementSelections
-		to: game.
-
-	self padding: (BlInsets all: 5 * game magnifier).
-	self layout columnCount: game width.
-
-	selectionsLabel := BlTextElement new.
-	selectionsLabel text: 'Sélections : 0' asRopedText.
-	"header addChild: selectionsLabel. "
-	self addChild: selectionsLabel.
-
-
-	game grid do: [ :aBox |
-			| boxElement |
-			boxElement := MBoxElement createWithBox: aBox.
-			self addChild: boxElement ]
+    game := aMBoard.
+    
+    game announcer
+        when: MBoxClickedAnnouncement
+        send: #updateSelectionsLabel
+        to: self.
+    
+    self padding: (BlInsets all: 5 * game magnifier).
+    self layout columnCount: game width.
+    
+    selectionsLabel := BlTextElement new.
+    selectionsLabel text: 'Sélections : 0' asRopedText.
+    self addChild: selectionsLabel.
+    
+    game grid do: [ :aBox |
+        | boxElement |
+        boxElement := MBoxElement createWithBox: aBox.
+        self addChild: boxElement ]
 ]
 
 { #category : 'initialization' }
@@ -223,7 +216,7 @@ MBoardElement >> initialize [
 
 { #category : 'as yet unclassified' }
 MBoardElement >> updateSelectionsLabel [
-      selectionsLabel text: ('Sélections : ', game numberOfSelections printString) asRopedText.
+          selectionsLabel text: ('Sélections : ', game numberOfSelections printString) asRopedText.
 
 
 
