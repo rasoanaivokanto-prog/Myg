@@ -29,7 +29,9 @@ Class {
 	#instVars : [
 		'game',
 		'selectionsLabel',
-		'header'
+		'header',
+		'footer',
+		'gridContainer'
 	],
 	#category : 'Myg-MineSweeper-UI',
 	#package : 'Myg-MineSweeper',
@@ -212,28 +214,38 @@ MBoardElement class >> withMatrixTest5x5WithMagnifier: aNumber [
 
 { #category : 'adding' }
 MBoardElement >> addSizeButtons [
-    | btn5 btn10 btn16 btn20 |
+     | btn5 btn10 btn16 btn20 |
     
     btn5 := self createSizeButton: '5x5' action: [ MBoardElement launchSmall5x5 ].
     btn10 := self createSizeButton: '10x10' action: [ MBoardElement launchMedium10x10 ].
     btn16 := self createSizeButton: '16x16' action: [ MBoardElement launchLarge16x16 ].
     btn20 := self createSizeButton: '20x20' action: [ MBoardElement launchVeryLarge20x20 ].
     
-    header addChild: btn5.
-    header addChild: btn10.
-    header addChild: btn16.
-    header addChild: btn20.
+    footer addChild: btn5.
+    footer addChild: btn10.
+    footer addChild: btn16.
+    footer addChild: btn20.
 ]
 
 { #category : 'as yet unclassified' }
 MBoardElement >> createSizeButton: label action: aBlock [
     | button |
     button := BlTextElement new.
-    button text: label asRopedText.
-    button padding: (BlInsets all: 5).
-    button margin: (BlInsets all: 2).
-    button background: Color lightGray.
+    button text: (label asRopedText 
+        fontSize: 14;
+        foreground: Color white).
+    button padding: (BlInsets all: 8).
+    button margin: (BlInsets all: 3).
+    button background: (Color fromHexString: '4A90E2').  "Bleu moderne"
+    button geometry: (BlRoundedRectangleGeometry cornerRadius: 5).
     button addEventHandlerOn: BlClickEvent do: [ :event | aBlock value ].
+    
+    "Effet hover"
+    button addEventHandlerOn: BlMouseEnterEvent do: [ :event |
+        button background: (Color fromHexString: '357ABD') ].
+    button addEventHandlerOn: BlMouseLeaveEvent do: [ :event |
+        button background: (Color fromHexString: '4A90E2') ].
+    
     ^ button
 ]
 
@@ -244,44 +256,68 @@ MBoardElement >> game [
 
 { #category : 'accessing' }
 MBoardElement >> game: aMBoard [
-    game := aMBoard.
+     game := aMBoard.
     
     game announcer
         when: MBoxClickedAnnouncement
         send: #updateSelectionsLabel
         to: self.
     
-    self padding: (BlInsets all: 5 * game magnifier).
-    self layout columnCount: game width.
-    
+    "Créer le label de sélections"
     selectionsLabel := BlTextElement new.
-    selectionsLabel text: 'Sélections : 0' asRopedText.
-    self addChild: selectionsLabel.
+    selectionsLabel text: ('Sélections : 0' asRopedText 
+        fontSize: 16;
+        bold).
+    header addChild: selectionsLabel.
     
+    "Créer un container pour la grille"
+    gridContainer := BlElement new.
+    gridContainer layout: (BlGridLayout horizontal 
+        columnCount: game width;
+        cellSpacing: 5).
+    gridContainer padding: (BlInsets all: 5 * game magnifier).
+    gridContainer constraintsDo: [ :c | 
+        c horizontal fitContent. 
+        c vertical fitContent ].
+    
+    "Ajouter les boxes à la grille"
     game grid do: [ :aBox |
         | boxElement |
         boxElement := MBoxElement createWithBox: aBox.
-        self addChild: boxElement ]
+        gridContainer addChild: boxElement ].
+    
+    "Assembler : header + grille + footer"
+    self addChild: gridContainer.
+    self addChild: footer.
 ]
 
 { #category : 'initialization' }
 MBoardElement >> initialize [
 
-	super initialize. 
-	header := BlElement new. 
-	header layout: BlLinearLayout horizontal. 
-	header constraintsDo: [:c | c horizontal fitContent. c vertical fitContent ]. 
+	 super initialize. 
 	
-	 self addSizeButtons.
-	
-	self background: (BlBackground paint: Color veryVeryLightGray). 
-	self layout: (BlGridLayout horizontal cellSpacing: 5). 
-	self constraintsDo: [ :aLayoutConstraints | aLayoutConstraints horizontal fitContent. aLayoutConstraints vertical fitContent ].  
-	self addChild: header.
-	"selectionsLabel := BlTextElement new. 
-	selectionsLabel text: 'Sélections : 0' asRopedText. 
-	""header addChild: selectionsLabel. ""
-	self addChild:  selectionsLabel."
+    self layout: BlLinearLayout vertical.
+    self background: (BlBackground paint: Color veryVeryLightGray). 
+    self constraintsDo: [ :aLayoutConstraints | 
+        aLayoutConstraints horizontal fitContent. 
+        aLayoutConstraints vertical fitContent ].
+
+    header := BlElement new. 
+    header layout: BlLinearLayout horizontal alignCenter.
+    header constraintsDo: [:c | 
+        c horizontal fitContent. 
+        c vertical fitContent ].
+    header padding: (BlInsets all: 5).
+    
+    footer := BlElement new.
+    footer layout: BlLinearLayout horizontal alignCenter.
+    footer constraintsDo: [:c | 
+        c horizontal fitContent. 
+        c vertical fitContent ].
+    footer padding: (BlInsets all: 10).
+    
+   self addChild: header.
+	self addSizeButtons.
 ]
 
 { #category : 'as yet unclassified' }
