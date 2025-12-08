@@ -12,7 +12,11 @@ Class {
 		'gameEnded',
 		'announcer',
 		'magnifier',
-		'numberOfSelections'
+		'numberOfSelections',
+		'placementStrategy',
+		'savedSetup',
+		'width',
+		'height'
 	],
 	#category : 'Myg-MineSweeper-Model',
 	#package : 'Myg-MineSweeper',
@@ -48,19 +52,19 @@ MBoard class >> matrixForField [
 { #category : 'as yet unclassified' }
 MBoard class >> matrixLarge [
     "16x16"
-    ^ self matrixWithWidth: 16 height: 16
+    ^ self matrixWithWidth: 16 height: 16 mineCount: 40
 ]
 
 { #category : 'as yet unclassified' }
 MBoard class >> matrixMedium [
     "10x10"
-    ^ self matrixWithWidth: 10 height: 10
+    ^ self matrixWithWidth: 10 height: 10 mineCount: 15
 ]
 
 { #category : 'as yet unclassified' }
 MBoard class >> matrixSmall [
     "5x5"
-    ^ self matrixWithWidth: 5 height: 5
+    ^ self matrixWithWidth: 5 height: 5 mineCount: 5
 ]
 
 { #category : 'instance creation' }
@@ -74,16 +78,32 @@ MBoard class >> matrixTest5x5 [
 { #category : 'as yet unclassified' }
 MBoard class >> matrixVeryLarge [
     "20x20"
-    ^ self matrixWithWidth: 20 height: 20
+    ^ self matrixWithWidth: 20 height: 20 mineCount: 70
 ]
 
 { #category : 'as yet unclassified' }
 MBoard class >> matrixWithWidth: width height: height [
-    ^ self createWithMatrix:
-        (CTNewArray2D 
-            width: width 
-            height: height 
-            tabulate: [ :column :row | MBox randomCase ])
+    ^ self matrixWithWidth: width height: height mineCount: (width * height // 6)
+]
+
+{ #category : 'as yet unclassified' }
+MBoard class >> matrixWithWidth: w height: h mineCount: n [
+
+	| matrix board |
+	"1. Créer matrice vide"
+	matrix := CTNewArray2D
+		          width: w
+		          height: h
+		          tabulate: [ :c :r | MSafeBox new ].
+
+	"2. Créer un board avec cette matrice"
+	board := self createWithMatrix: matrix.
+
+	"3. Appliquer la stratégie de placement de mines"
+	board configureGridWithMineCount: n.
+
+	"4. Retourner le board configuré"
+	^ board
 ]
 
 { #category : 'accessing' }
@@ -95,6 +115,16 @@ MBoard >> announcer [
 MBoard >> anyBoxSatisfy: aBlock [
 
 	^ grid anySatisfy: aBlock
+]
+
+{ #category : 'as yet unclassified' }
+MBoard >> booleanMatrixFrom: aMatrix [
+    | w h boolMatrix |
+    w := aMatrix width.
+    h := aMatrix height.
+    boolMatrix := CTNewArray2D width: w height: h tabulate: [ :c :r |
+        (aMatrix at: c @ r) isMineBox ].
+    ^ boolMatrix
 ]
 
 { #category : 'accessing' }
@@ -185,6 +215,23 @@ MBoard >> clickOnBox: aBox [
 	
 ]
 
+{ #category : 'as yet unclassified' }
+MBoard >> configureGridWithMineCount: mineCount [
+    "Construire grid en utilisant la stratégie"
+    | w h positions matrix |
+    w := self width.
+    h := self height.
+    positions := (self placementStrategy placeMinesOn: self withCount: mineCount).
+    matrix := CTNewArray2D width: w height: h tabulate: [ :c :r | MSafeBox new ].
+    positions do: [ :pos |
+        | x y |
+        x := pos x. y := pos y.
+        matrix at: x @ y put: MMineBox new ].
+    self configureGrid: matrix.
+    "sauvegarder setup pour replay"
+    self savedSetup: (self booleanMatrixFrom: matrix).
+]
+
 { #category : 'box api' }
 MBoard >> flagCountAroundBox: aBox [
 
@@ -220,7 +267,12 @@ MBoard >> hasMineBoxAroundBox: aBox [
 { #category : 'accessing' }
 MBoard >> height [
 
-	^ grid height
+	^ height
+]
+
+{ #category : 'accessing' }
+MBoard >> height: aNumber [
+    height := aNumber.
 ]
 
 { #category : 'player api' }
@@ -267,6 +319,16 @@ MBoard >> numberOfSelections [
     ^ numberOfSelections.
 ]
 
+{ #category : 'accessing' }
+MBoard >> placementStrategy [
+    ^ placementStrategy ifNil: [ placementStrategy := MRandomPlacement new ].
+]
+
+{ #category : 'accessing' }
+MBoard >> placementStrategy: aStrategy [
+    placementStrategy := aStrategy.
+]
+
 { #category : 'box api' }
 MBoard >> playerLoose [
 
@@ -307,6 +369,19 @@ MBoard >> replaceBox: aBox by: aNewBox [
 ]
 
 { #category : 'as yet unclassified' }
+MBoard >> replaySavedSetup [
+	| w h matrix |
+    savedSetup ifNil: [ ^ self ].	
+    w := savedSetup width.
+    h := savedSetup height.
+    matrix := CTNewArray2D width: w height: h tabulate: [ :c :r |
+        (savedSetup at: c @ r)
+            ifTrue: [ MMineBox new ]
+            ifFalse: [ MSafeBox new ] ].
+    ^ self class  createWithMatrix: matrix.
+]
+
+{ #category : 'as yet unclassified' }
 MBoard >> revealBoard [
 
 	self boxesDoWithIndices: [ :aBox :i :j |
@@ -323,7 +398,24 @@ MBoard >> rightFlagCountAroundBox: aBox [
 ]
 
 { #category : 'accessing' }
+MBoard >> savedSetup [
+    ^ savedSetup
+]
+
+{ #category : 'accessing' }
+MBoard >> savedSetup: aBoolMatrix [
+    savedSetup := aBoolMatrix.
+]
+
+{ #category : 'accessing' }
 MBoard >> width [
 
-	^ grid width
+	^ width
+]
+
+{ #category : 'accessing' }
+MBoard >> width: aNumber [
+    width := aNumber.
+
+
 ]
