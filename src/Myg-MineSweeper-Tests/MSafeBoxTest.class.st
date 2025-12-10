@@ -21,5 +21,5 @@ MSafeBoxTest >> testClickInAtAtProduceAPropagateTONeighbour [
 
 { #category : 'tests' }
 MSafeBoxTest >> testCommit [
-	^ Transcript show:'Hello' 
+	^ Transcript show:'Hello Cathy' 
 ]
