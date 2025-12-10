@@ -76,19 +76,21 @@ MBoard class >> matrixForField [
 { #category : 'as yet unclassified' }
 MBoard class >> matrixLarge [
     "16x16"
-    ^ self matrixWithWidth: 16 height: 16 mineCount: 40
+    ^ MLargeBoardStrategy new createBoard
+
 ]
 
 { #category : 'as yet unclassified' }
 MBoard class >> matrixMedium [
     "10x10"
-    ^ self matrixWithWidth: 10 height: 10 mineCount: 15
+    ^ MMediumBoardStrategy new createBoard
 ]
 
 { #category : 'as yet unclassified' }
 MBoard class >> matrixSmall [
     "5x5"
-    ^ self matrixWithWidth: 5 height: 5 mineCount: 5
+    ^ MSmallBoardStrategy new createBoard
+
 ]
 
 { #category : 'instance creation' }
@@ -102,7 +104,7 @@ MBoard class >> matrixTest5x5 [
 { #category : 'as yet unclassified' }
 MBoard class >> matrixVeryLarge [
     "20x20"
-    ^ self matrixWithWidth: 20 height: 20 mineCount: 70
+    ^ MVeryLargeBoardStrategy new createBoard
 ]
 
 { #category : 'as yet unclassified' }
@@ -344,11 +346,6 @@ MBoard >> mineCountAroundBox: aBox [
 		   box isMineBox
 			   ifTrue: [ 1 ]
 			   ifFalse: [ 0 ] ]) sum
-]
-
-{ #category : 'player api' }
-MBoard >> numberOfSelections [
-    ^ numberOfSelections.
 ]
 
 { #category : 'accessing' }

@@ -39,6 +39,15 @@ Class {
 	#tag : 'UI'
 }
 
+{ #category : 'as yet unclassified' }
+MBoardElement class >> allSizeStrategies [
+    ^ { MSmallBoardStrategy new.
+        MMediumBoardStrategy new.
+        MLargeBoardStrategy new.
+        MVeryLargeBoardStrategy new }
+
+]
+
 { #category : 'instance creation' }
 MBoardElement class >> launchLarge [
 	^ self withMatrixTest5x5WithMagnifier: 2
@@ -46,8 +55,7 @@ MBoardElement class >> launchLarge [
 
 { #category : 'as yet unclassified' }
 MBoardElement class >> launchLarge16x16 [
-    ^ self openWithModel: MBoard matrixLarge
-
+    ^ self launchWithStrategy: MLargeBoardStrategy new
 ]
 
 { #category : 'as yet unclassified' }
@@ -57,7 +65,7 @@ MBoardElement class >> launchLarge16x16WithMagnifier: aNumber [
 
 { #category : 'as yet unclassified' }
 MBoardElement class >> launchMedium10x10 [
-    ^ self openWithModel: (MBoard matrixMedium)
+    ^ self launchWithStrategy: MMediumBoardStrategy new
 ]
 
 { #category : 'as yet unclassified' }
@@ -77,7 +85,8 @@ MBoardElement class >> launchSmall [
 
 { #category : 'as yet unclassified' }
 MBoardElement class >> launchSmall5x5 [
-    ^ self openWithModel: (MBoard matrixSmall)
+    ^ self launchWithStrategy: MSmallBoardStrategy new
+
 ]
 
 { #category : 'as yet unclassified' }
@@ -92,7 +101,7 @@ MBoardElement class >> launchVeryLarge [
 
 { #category : 'as yet unclassified' }
 MBoardElement class >> launchVeryLarge20x20 [
-    ^ self openWithModel: MBoard matrixVeryLarge
+    ^ self launchWithStrategy: MVeryLargeBoardStrategy new
 ]
 
 { #category : 'as yet unclassified' }
@@ -107,6 +116,15 @@ MBoardElement class >> launchWithBoard: aBoard [
     element initialize.
     element game: aBoard.
     ^ element
+]
+
+{ #category : 'as yet unclassified' }
+MBoardElement class >> launchWithStrategy: aStrategy [
+    | board |
+    board := aStrategy createBoard.
+    board magnifier: aStrategy magnifierDefault.
+    ^ self openWithModel: board
+
 ]
 
 { #category : 'instance creation' }
@@ -232,35 +250,11 @@ MBoardElement >> addRadarButton [
 
 { #category : 'adding' }
 MBoardElement >> addSizeButtons [
-
-	| btn5 btn10 btn16 btn20 btnReplay |
-	btn5 := self
-		        createSizeButton: '5x5'
-		        action: [ MBoardElement launchSmall5x5 ].
-	btn10 := self
-		         createSizeButton: '10x10'
-		         action: [ MBoardElement launchMedium10x10 ].
-	btn16 := self
-		         createSizeButton: '16x16'
-		         action: [ MBoardElement launchLarge16x16 ].
-	btn20 := self
-		         createSizeButton: '20x20'
-		         action: [ MBoardElement launchVeryLarge20x20 ].
-
-	"NOUVEAU BOUTON REPLAY"
-	btnReplay := self createSizeButton: 'Replay' action: [
-			             | newBoard |
-			             newBoard := MBoard replaySavedSetup.
-			             newBoard
-				             ifNil: [
-				             self inform: 'Aucune configuration sauvegardée.' ]
-				             ifNotNil: [ MBoardElement launchWithBoard: newBoard ] ].
-
-	footer addChild: btn5.
-	footer addChild: btn10.
-	footer addChild: btn16.
-	footer addChild: btn20.
-    footer addChild: btnReplay
+	self class allSizeStrategies do: [ :strategy |
+        | button |
+        button := self createSizeButton: strategy name 
+                  action: [ self class launchWithStrategy: strategy ].
+        footer addChild: button ]
 ]
 
 { #category : 'as yet unclassified' }
@@ -272,11 +266,10 @@ MBoardElement >> createSizeButton: label action: aBlock [
         foreground: Color white).
     button padding: (BlInsets all: 8).
     button margin: (BlInsets all: 3).
-    button background: (Color fromHexString: '4A90E2').  "Bleu moderne"
+    button background: (Color fromHexString: '4A90E2').
     button geometry: (BlRoundedRectangleGeometry cornerRadius: 5).
     button addEventHandlerOn: BlClickEvent do: [ :event | aBlock value ].
     
-    "Effet hover"
     button addEventHandlerOn: BlMouseEnterEvent do: [ :event |
         button background: (Color fromHexString: '357ABD') ].
     button addEventHandlerOn: BlMouseLeaveEvent do: [ :event |
@@ -292,21 +285,21 @@ MBoardElement >> game [
 
 { #category : 'accessing' }
 MBoardElement >> game: aMBoard [
-     game := aMBoard.
-
+    game := MSelectionCounterDecorator decorate: aMBoard.
+    
     game announcer
         when: MBoxClickedAnnouncement
         send: #updateSelectionsLabel
         to: self.
     
-    "Créer le label de sélections"
+    self padding: (BlInsets all: 5 * game magnifier).
+    
     selectionsLabel := BlTextElement new.
     selectionsLabel text: ('Sélections : 0' asRopedText 
         fontSize: 16;
         bold).
     header addChild: selectionsLabel.
     
-    "Créer un container pour la grille"
     gridContainer := BlElement new.
     gridContainer layout: (BlGridLayout horizontal 
         columnCount: game width;
@@ -316,13 +309,11 @@ MBoardElement >> game: aMBoard [
         c horizontal fitContent. 
         c vertical fitContent ].
     
-    "Ajouter les boxes à la grille"
     game grid do: [ :aBox |
         | boxElement |
         boxElement := MBoxElement createWithBox: aBox.
         gridContainer addChild: boxElement ].
     
-    "Assembler : header + grille + footer"
     self addChild: gridContainer.
     self addChild: footer.
 ]
