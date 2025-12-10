@@ -190,6 +190,10 @@ MBoxElement >> initializeAnnouncements [
 	self box announcer
 		when: MBoxClickedAnnouncement
 		send: #click
+		to: self.
+	self box announcer
+		when: MBoxRadarAnnouncement
+		send: #radar:
 		to: self
 ]
 
@@ -237,6 +241,24 @@ MBoxElement >> newExplosionStar [
 		  background: Color random;
 		  constraintsDo: [ :c | c ignoreByLayout ];
 		  yourself
+]
+
+{ #category : 'as yet unclassified' }
+MBoxElement >> radar: aRadarAnnouncement [
+    | overlay |
+    self removeChildWithId: 'radar' ifPresent: [].
+    overlay := BlElement new.
+    overlay id: 'radar'.
+    overlay constraintsDo: [:c | c horizontal matchParent. c vertical matchParent].
+    aRadarAnnouncement isMine
+        ifTrue: [
+            overlay background: Color red translucent: 0.5.
+            "show a mine icon but do NOT call explode"
+            overlay addChild: ( (BlTextElement new text: '💣') constraintsDo: [:c | c frame horizontal alignCenter. c frame vertical alignCenter ]) ]
+        ifFalse: [
+            overlay background: Color green translucent: 0.4.
+            overlay addChild: ( (BlTextElement new text: '✓') constraintsDo: [:c | c frame horizontal alignCenter. c frame vertical alignCenter ]) ].
+    self addChild: overlay.
 ]
 
 { #category : 'writing' }

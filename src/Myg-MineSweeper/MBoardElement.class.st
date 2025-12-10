@@ -31,7 +31,8 @@ Class {
 		'selectionsLabel',
 		'header',
 		'footer',
-		'gridContainer'
+		'gridContainer',
+		'radarMode'
 	],
 	#category : 'Myg-MineSweeper-UI',
 	#package : 'Myg-MineSweeper',
@@ -56,7 +57,7 @@ MBoardElement class >> launchLarge16x16WithMagnifier: aNumber [
 
 { #category : 'as yet unclassified' }
 MBoardElement class >> launchMedium10x10 [
-    ^ self openWithModel: MBoard matrixMedium
+    ^ self openWithModel: (MBoard matrixMedium)
 ]
 
 { #category : 'as yet unclassified' }
@@ -76,7 +77,7 @@ MBoardElement class >> launchSmall [
 
 { #category : 'as yet unclassified' }
 MBoardElement class >> launchSmall5x5 [
-    ^ self openWithModel: MBoard matrixSmall
+    ^ self openWithModel: (MBoard matrixSmall)
 ]
 
 { #category : 'as yet unclassified' }
@@ -97,6 +98,15 @@ MBoardElement class >> launchVeryLarge20x20 [
 { #category : 'as yet unclassified' }
 MBoardElement class >> launchVeryLarge20x20WithMagnifier: aNumber [
     ^ self openWithModel: MBoard matrixVeryLarge withMagnifier: aNumber
+]
+
+{ #category : 'instance creation' }
+MBoardElement class >> launchWithBoard: aBoard [
+    | element |
+    element := self new.
+    element initialize.
+    element game: aBoard.
+    ^ element
 ]
 
 { #category : 'instance creation' }
@@ -209,22 +219,48 @@ MBoardElement class >> withMatrixTest5x5 [
 { #category : 'execution' }
 MBoardElement class >> withMatrixTest5x5WithMagnifier: aNumber [
 
-	^ self openWithModel: MBoard matrixTest5x5 withMagnifier: aNumber 
+	^ self openWithModel: MBoard matrixSmall withMagnifier: aNumber 
+]
+
+{ #category : 'adding' }
+MBoardElement >> addRadarButton [
+    | btn |
+    btn := self createSizeButton: 'Radar' action: [ self toggleRadarMode ].
+    footer addChild: btn.
+
 ]
 
 { #category : 'adding' }
 MBoardElement >> addSizeButtons [
-     | btn5 btn10 btn16 btn20 |
-    
-    btn5 := self createSizeButton: '5x5' action: [ MBoardElement launchSmall5x5 ].
-    btn10 := self createSizeButton: '10x10' action: [ MBoardElement launchMedium10x10 ].
-    btn16 := self createSizeButton: '16x16' action: [ MBoardElement launchLarge16x16 ].
-    btn20 := self createSizeButton: '20x20' action: [ MBoardElement launchVeryLarge20x20 ].
-    
-    footer addChild: btn5.
-    footer addChild: btn10.
-    footer addChild: btn16.
-    footer addChild: btn20.
+
+	| btn5 btn10 btn16 btn20 btnReplay |
+	btn5 := self
+		        createSizeButton: '5x5'
+		        action: [ MBoardElement launchSmall5x5 ].
+	btn10 := self
+		         createSizeButton: '10x10'
+		         action: [ MBoardElement launchMedium10x10 ].
+	btn16 := self
+		         createSizeButton: '16x16'
+		         action: [ MBoardElement launchLarge16x16 ].
+	btn20 := self
+		         createSizeButton: '20x20'
+		         action: [ MBoardElement launchVeryLarge20x20 ].
+
+	"NOUVEAU BOUTON REPLAY"
+	btnReplay := self createSizeButton: 'Replay' action: [
+			             | newBoard |
+			             newBoard := MBoard replaySavedSetup.
+			             newBoard
+				             ifNil: [
+				             self inform: 'Aucune configuration sauvegardée.' ]
+				             ifNotNil: [ MBoardElement launchWithBoard: newBoard ] ].
+
+	footer addChild: btn5.
+	footer addChild: btn10.
+	footer addChild: btn16.
+	footer addChild: btn20.
+    footer addChild: btnReplay
 ]
 
 { #category : 'as yet unclassified' }
@@ -257,7 +293,7 @@ MBoardElement >> game [
 { #category : 'accessing' }
 MBoardElement >> game: aMBoard [
      game := aMBoard.
-    
+
     game announcer
         when: MBoxClickedAnnouncement
         send: #updateSelectionsLabel
@@ -318,6 +354,17 @@ MBoardElement >> initialize [
     
    self addChild: header.
 	self addSizeButtons.
+]
+
+{ #category : 'accessing' }
+MBoardElement >> radarMode: aBoolean [
+    radarMode := aBoolean.
+]
+
+{ #category : 'as yet unclassified' }
+MBoardElement >> toggleRadarMode [
+    self radarMode: (self radarMode not).
+    "Update footer button appearance accordingly"
 ]
 
 { #category : 'as yet unclassified' }

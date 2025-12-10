@@ -6,6 +6,18 @@ Class {
 }
 
 { #category : 'tests' }
+MPlacementStrategyTest >> testReplayCreatesSameSetup [
+    | board original saved replay |
+    board := MBoard new.
+    board width: 5; height: 5.
+    board placementStrategy: (MSeededPlacement withSeed: 123).
+    board configureGridWithMineCount: 6.
+    saved := board  savedSetup.
+    replay := (MBoard new) replaySavedSetup.
+    self assert: (saved = replay savedSetup).
+]
+
+{ #category : 'tests' }
 MPlacementStrategyTest >> testSeededPlacementIsDeterministic [
     | s1 s2 board1 board2 strat1 strat2 pos1 pos2 |
     strat1 := MSeededPlacement  withSeed: 42.

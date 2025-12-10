@@ -18,6 +18,10 @@ Class {
 		'width',
 		'height'
 	],
+	#classInstVars : [
+		'lastBoardPlayed',
+		'lastSavedSetup'
+	],
 	#category : 'Myg-MineSweeper-Model',
 	#package : 'Myg-MineSweeper',
 	#tag : 'Model'
@@ -29,6 +33,26 @@ MBoard class >> createWithMatrix: aMatrix [
 	^ self new
 		  configureGrid: aMatrix;
 		  yourself
+]
+
+{ #category : 'accessing' }
+MBoard class >> lastBoardPlayed [
+    ^ lastBoardPlayed
+]
+
+{ #category : 'accessing' }
+MBoard class >> lastBoardPlayed: aBoard [
+    lastBoardPlayed := aBoard
+]
+
+{ #category : 'accessing' }
+MBoard class >> lastSavedSetup [
+    ^ lastSavedSetup
+]
+
+{ #category : 'accessing' }
+MBoard class >> lastSavedSetup: aMatrix [
+    lastSavedSetup := aMatrix
 ]
 
 { #category : 'test ressources' }
@@ -96,6 +120,7 @@ MBoard class >> matrixWithWidth: w height: h mineCount: n [
 		          height: h
 		          tabulate: [ :c :r | MSafeBox new ].
 
+
 	"2. Créer un board avec cette matrice"
 	board := self createWithMatrix: matrix.
 
@@ -104,6 +129,12 @@ MBoard class >> matrixWithWidth: w height: h mineCount: n [
 
 	"4. Retourner le board configuré"
 	^ board
+]
+
+{ #category : 'as yet unclassified' }
+MBoard class >> replaySavedSetup [
+    lastBoardPlayed ifNil: [ ^ nil ].
+    ^ lastBoardPlayed replaySavedSetup
 ]
 
 { #category : 'accessing' }
@@ -217,19 +248,25 @@ MBoard >> clickOnBox: aBox [
 
 { #category : 'as yet unclassified' }
 MBoard >> configureGridWithMineCount: mineCount [
-    "Construire grid en utilisant la stratégie"
-    | w h positions matrix |
-    w := self width.
-    h := self height.
-    positions := (self placementStrategy placeMinesOn: self withCount: mineCount).
-    matrix := CTNewArray2D width: w height: h tabulate: [ :c :r | MSafeBox new ].
-    positions do: [ :pos |
-        | x y |
-        x := pos x. y := pos y.
-        matrix at: x @ y put: MMineBox new ].
-    self configureGrid: matrix.
-    "sauvegarder setup pour replay"
-    self savedSetup: (self booleanMatrixFrom: matrix).
+	"Construire grid en utilisant la stratégie"
+
+	| w h positions matrix |
+	w := self width.
+	h := self height.
+	positions := self placementStrategy
+		             placeMinesOn: self
+		             withCount: mineCount.
+	matrix := CTNewArray2D
+		          width: w
+		          height: h
+		          tabulate: [ :c :r | MSafeBox new ].
+	positions do: [ :pos |
+			| x y |
+			x := pos x.
+			y := pos y.
+			matrix at: x @ y put: MMineBox new ].
+	self configureGrid: matrix. "sauvegarder setup pour replay"
+	self savedSetup: (self booleanMatrixFrom: matrix)
 ]
 
 { #category : 'box api' }
@@ -267,12 +304,7 @@ MBoard >> hasMineBoxAroundBox: aBox [
 { #category : 'accessing' }
 MBoard >> height [
 
-	^ height
-]
-
-{ #category : 'accessing' }
-MBoard >> height: aNumber [
-    height := aNumber.
+	^ grid height
 ]
 
 { #category : 'player api' }
@@ -359,6 +391,16 @@ MBoard >> printOn: aStream [
 		i = self width ifFalse: [ aStream	<< Smalltalk os lineEnding ] ]
 ]
 
+{ #category : 'player api' }
+MBoard >> radarScanAt: aBox [
+    "Does not change game state; only announces radar results"
+    | mine |
+    mine := (self boxAt: aBox position x at: aBox position y) isMineBox.
+    ^ aBox announcer
+        announce: (MBoxRadarAnnouncement new box: aBox; isMine: mine; yourself).
+	
+]
+
 { #category : 'box api' }
 MBoard >> replaceBox: aBox by: aNewBox [
 
@@ -370,12 +412,13 @@ MBoard >> replaceBox: aBox by: aNewBox [
 
 { #category : 'as yet unclassified' }
 MBoard >> replaySavedSetup [
-	| w h matrix |
-    savedSetup ifNil: [ ^ self ].	
-    w := savedSetup width.
-    h := savedSetup height.
+	|src  w h matrix |
+	src := self savedSetup ifNil: [ self class lastSavedSetup ].
+    src ifNil: [ ^ nil ].
+    w := src width.
+    h := src height.
     matrix := CTNewArray2D width: w height: h tabulate: [ :c :r |
-        (savedSetup at: c @ r)
+        (src at: c @ r)
             ifTrue: [ MMineBox new ]
             ifFalse: [ MSafeBox new ] ].
     ^ self class  createWithMatrix: matrix.
@@ -410,12 +453,5 @@ MBoard >> savedSetup: aBoolMatrix [
 { #category : 'accessing' }
 MBoard >> width [
 
-	^ width
-]
-
-{ #category : 'accessing' }
-MBoard >> width: aNumber [
-    width := aNumber.
-
-
+	^ grid width
 ]
