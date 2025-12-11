@@ -49,38 +49,43 @@ MineSweeper class >> menuHelp [
 	menu labelText: 'Help'.
 	menu iconImage: (Smalltalk ui icons iconNamed: #glamorousHelp).
 	menu clickAction: [
-		| container lab space |
-		lab := ToLabel text: 'How to play:
-		 
+			| container lab space |
+			lab := ToLabel text: 'How to play:
+         
 The Minesweeper is a famous game where you need to clear a field without touching any bomb.
 
 - You can click on a cell to uncover it and reveal the number of bombs around this cell.
 - Right-click on a cell to flag it and avoid clicking on it, right-click again to unflag.
 - When you flagged as many neighbouring cells as bombs around a cell, you can click on this cell to uncover all unflagged neighbouring cells.
-			
+
+NEW FEATURES:
+- 📡 Radar button: Use it to reveal if a cell is safe or has a mine without exploding
+- 🔄 Replay button: Replay the exact same mine configuration
+- Choose different mine placement strategies from the menu
+            
 The game ends when you have cleared all safe cells.
-			
+            
 Have fun !'.
-		lab beMultiLine.
-		lab hMatchParent.
-		container := BlElement new
-			             background: Color lightBlue;
-			             padding: (BlInsets all: 15);
-			             layout: BlLinearLayout vertical;
-			             constraintsDo: [ :c |
-				             c horizontal fitContent.
-				             c vertical fitContent ].
-		container addChild: lab.
-		space := BlSpace new.
-		space root
-			layout: BlFrameLayout new;
-			addChild: container;
-			constraintsDo: [ :c |
-				c horizontal fitContent.
-				c vertical fitContent ].
-		space pulse.
-		space extent: container extent.
-		space show ].
+			lab beMultiLine.
+			lab hMatchParent.
+			container := BlElement new
+				             background: Color lightBlue;
+				             padding: (BlInsets all: 15);
+				             layout: BlLinearLayout vertical;
+				             constraintsDo: [ :c |
+						             c horizontal fitContent.
+						             c vertical fitContent ].
+			container addChild: lab.
+			space := BlSpace new.
+			space root
+				layout: BlFrameLayout new;
+				addChild: container;
+				constraintsDo: [ :c |
+						c horizontal fitContent.
+						c vertical fitContent ].
+			space pulse.
+			space extent: container extent.
+			space show ].
 	^ menu
 ]
 
@@ -94,38 +99,112 @@ MineSweeper class >> menuPlay [
 	menu addItem:
 		(ToMenuItem new
 			labelText: 'Small';
-			clickAction: [ MBoardElement launchSmall ];
+			clickAction: [ MBoardElement launchSmall5x5 ];
 			yourself).
 	menu addItem:
 		(ToMenuItem new
 			labelText: 'Regular';
-			clickAction: [ MBoardElement launchRegular ];
+			clickAction: [ MBoardElement launchMedium10x10 ];
 			yourself).
 	menu addItem:
 		(ToMenuItem new
 			labelText: 'Large';
-			clickAction: [ MBoardElement launchLarge ];
+			clickAction: [ MBoardElement launchLarge16x16 ];
 			yourself).
 	menu addItem:
 		(ToMenuItem new
 			labelText: 'Very Large';
-			clickAction: [ MBoardElement launchVeryLarge ];
+			clickAction: [ MBoardElement launchVeryLarge20x20 ];
 			yourself).
 
 	^ menu
+]
+
+{ #category : 'as yet unclassified' }
+MineSweeper class >> menuStrategies [
+     | menu |
+    menu := ToMenu new.
+    menu labelText: 'Mine Patterns'.
+    menu iconImage: (Smalltalk ui icons iconNamed: #configurationOption).
+    
+    "Stratégie Random"
+    menu addItem:
+        (ToMenuItem new
+            labelText: 'Random Mines';
+            clickAction: [ 
+                | board strategy randomSeed |
+                randomSeed := Time microsecondClockValue \\ 1000000.
+                board := MBoard new.
+                board initializeWithSize: 10 height: 10.
+                board seed: randomSeed.
+                strategy := MRandomMineStrategy new seed: randomSeed.
+                board mineStrategy: strategy.
+                strategy placeMinesOn: board.
+                MBoardElement openWithModel: board ];
+            yourself).
+    
+    "Stratégie Fixed Count"
+    menu addItem:
+        (ToMenuItem new
+            labelText: 'Fixed Count (15 mines)';
+            clickAction: [ 
+                | board strategy randomSeed |
+                randomSeed := Time microsecondClockValue \\ 1000000.
+                board := MBoard new.
+                board initializeWithSize: 10 height: 10.
+                board seed: randomSeed.
+                strategy := MFixedCountMineStrategy new mineCount: 15.
+                strategy seed: randomSeed.
+                board mineStrategy: strategy.
+                strategy placeMinesOn: board.
+                MBoardElement openWithModel: board ];
+            yourself).
+    
+    "Stratégie Cross"
+    menu addItem:
+        (ToMenuItem new
+            labelText: 'Cross Pattern';
+            clickAction: [ 
+                | board |
+                board := MBoard new.
+                board initializeWithSize: 11 height: 11.
+                board seed: 0.  "Pas de seed pour cross"
+                board mineStrategy: MCrossMineStrategy new.
+                board mineStrategy placeMinesOn: board.
+                MBoardElement openWithModel: board ];
+            yourself).
+    
+    "Stratégie Reproductible"
+    menu addItem:
+        (ToMenuItem new
+            labelText: 'Reproducible Game (seed: 12345)';
+            clickAction: [ 
+                | board strategy |
+                board := MBoard new.
+                board initializeWithSize: 10 height: 10.
+                board seed: 12345.
+                strategy := MRandomMineStrategy new seed: 12345.
+                board mineStrategy: strategy.
+                strategy placeMinesOn: board.
+                MBoardElement openWithModel: board ];
+            yourself).
+    
+    ^ menu
 ]
 
 { #category : 'instance creation' }
 MineSweeper class >> open [
 
 	<script>
-	| space playMenu helpMenu bar title |
+	| space playMenu helpMenu strategiesMenu  bar title |
 	playMenu := self menuPlay.
 	helpMenu := self menuHelp.
+	strategiesMenu := self menuStrategies. 
 	bar := self menuBar.
 	title := self title.
 
 	bar addItem: playMenu.
+	bar addItem: strategiesMenu. 
 	bar addItem: helpMenu.
 	space := BlSpace new.
 

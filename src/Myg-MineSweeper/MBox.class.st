@@ -19,14 +19,6 @@ MBox class >> mine [
 	^ MMineBox new
 ]
 
-{ #category : 'random subclass instance creation' }
-MBox class >> randomCase [
-
-	^ (1 to: 8) atRandom > 6
-		  ifTrue: [ self mine ]
-		  ifFalse: [ self safe ]
-]
-
 { #category : 'subclass instance creation' }
 MBox class >> safe [
 	^ MSafeBox new
@@ -35,6 +27,16 @@ MBox class >> safe [
 { #category : 'accessing' }
 MBox >> announcer [ 
 	^ announcer ifNil: [ announcer := Announcer new ]
+]
+
+{ #category : 'accessing' }
+MBox >> board [
+    ^ board
+]
+
+{ #category : 'accessing' }
+MBox >> board: aMBoard [
+    board := aMBoard
 ]
 
 { #category : 'clicking' }
@@ -90,6 +92,16 @@ MBox >> isSafeBox [
 	^ false
 ]
 
+{ #category : 'accessing' }
+MBox >> position [
+    ^ position
+]
+
+{ #category : 'accessing' }
+MBox >> position: aPoint [
+    position := aPoint
+]
+
 { #category : 'clicking' }
 MBox >> propagateClick [
 
@@ -98,4 +110,11 @@ MBox >> propagateClick [
 		self board
 			boxesAroundBox: self
 			do: [ :box | box isClicked ifFalse: [ box click ] ] ]
+]
+
+{ #category : 'accessing' }
+MBox >> setPosition: aPoint board: aMBoard [
+    position := aPoint.
+    board := aMBoard.
+    ^ self
 ]

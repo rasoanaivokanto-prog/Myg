@@ -43,7 +43,10 @@ Class {
 { #category : 'accessing' }
 MBoxElement class >> createWithBox: aMBox [
 
-	^ self new box: aMBox
+	^ self new
+        box: aMBox;
+        size: 50@50;
+        yourself
 ]
 
 { #category : 'accessing' }
@@ -192,8 +195,8 @@ MBoxElement >> initializeAnnouncements [
 		send: #click
 		to: self.
 	self box announcer
-		when: MBoxRadarAnnouncement
-		send: #radar:
+		when: MRadarUsedAnnouncement
+		send: #showRadarResult
 		to: self
 ]
 
@@ -201,11 +204,12 @@ MBoxElement >> initializeAnnouncements [
 MBoxElement >> initializeEvents [
 
 	self addEventHandlerOn: BlClickEvent do: [ :anEvent |
-		anEvent
-			ifPrimary: [ self box isFlagged ifFalse: [self box click ] ]
-			secondary: [ self flag ]
-			middle: [ ^ self ]
-			other: [ ^ self ] ]
+			anEvent
+				ifPrimary: [
+				self box isFlagged ifFalse: [ self box board clickOnBox: self box ] ]
+				secondary: [ self flag ]
+				middle: [ ^ self ]
+				other: [ ^ self ] ]
 ]
 
 { #category : 'accessing' }
@@ -244,21 +248,25 @@ MBoxElement >> newExplosionStar [
 ]
 
 { #category : 'as yet unclassified' }
-MBoxElement >> radar: aRadarAnnouncement [
-    | overlay |
-    self removeChildWithId: 'radar' ifPresent: [].
-    overlay := BlElement new.
-    overlay id: 'radar'.
-    overlay constraintsDo: [:c | c horizontal matchParent. c vertical matchParent].
-    aRadarAnnouncement isMine
-        ifTrue: [
-            overlay background: Color red translucent: 0.5.
-            "show a mine icon but do NOT call explode"
-            overlay addChild: ( (BlTextElement new text: '💣') constraintsDo: [:c | c frame horizontal alignCenter. c frame vertical alignCenter ]) ]
-        ifFalse: [
-            overlay background: Color green translucent: 0.4.
-            overlay addChild: ( (BlTextElement new text: '✓') constraintsDo: [:c | c frame horizontal alignCenter. c frame vertical alignCenter ]) ].
-    self addChild: overlay.
+MBoxElement >> showRadarResult [
+    | result textElt |
+    result := self box isSafeBox
+        ifTrue: [ '✓' ]
+        ifFalse: [ '💣' ].
+    
+    self background: (self box isSafeBox
+        ifTrue: [ Color green alpha: 0.5 ]
+        ifFalse: [ Color orange alpha: 0.5 ]).
+    
+    textElt := BlTextElement new.
+    textElt text: (result asRopedText 
+        fontSize: (self width min: self height) * 0.6;
+        foreground: Color black).
+    textElt constraintsDo: [ :c |
+        c frame horizontal alignCenter.
+        c frame vertical alignCenter ].
+    
+    self addChild: textElt
 ]
 
 { #category : 'writing' }

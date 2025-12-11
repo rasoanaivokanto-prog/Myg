@@ -13,14 +13,12 @@ Class {
 		'announcer',
 		'magnifier',
 		'numberOfSelections',
-		'placementStrategy',
-		'savedSetup',
-		'width',
-		'height'
+		'mineStrategy',
+		'seed',
+		'radarMode'
 	],
 	#classInstVars : [
-		'lastBoardPlayed',
-		'lastSavedSetup'
+		'savesSetup'
 	],
 	#category : 'Myg-MineSweeper-Model',
 	#package : 'Myg-MineSweeper',
@@ -35,106 +33,53 @@ MBoard class >> createWithMatrix: aMatrix [
 		  yourself
 ]
 
-{ #category : 'accessing' }
-MBoard class >> lastBoardPlayed [
-    ^ lastBoardPlayed
-]
-
-{ #category : 'accessing' }
-MBoard class >> lastBoardPlayed: aBoard [
-    lastBoardPlayed := aBoard
-]
-
-{ #category : 'accessing' }
-MBoard class >> lastSavedSetup [
-    ^ lastSavedSetup
-]
-
-{ #category : 'accessing' }
-MBoard class >> lastSavedSetup: aMatrix [
-    lastSavedSetup := aMatrix
-]
-
-{ #category : 'test ressources' }
-MBoard class >> matrixForField [
-
-	^ self createWithMatrix: ((CTNewArray2D
-			    width: 5
-			    height: 5
-			    tabulate: [ :column :row | MBox safe ])
-			   at: 1 @ 3 put: MBox mine;
-			at: 1 @ 5 put: MBox mine;
-			   at: 2 @ 3 put: MBox mine;
-			   at: 3 @ 1 put: MBox mine;
-			   at: 3 @ 2 put: MBox mine;
-			   at: 3 @ 3 put: MBox mine;
-			   at: 4 @ 4 put: MBox mine;
-			   at: 5 @ 4 put: MBox mine;
-			   yourself)
+{ #category : 'as yet unclassified' }
+MBoard class >> fromMemento: aMemento [
+    ^ aMemento restoreBoard
 ]
 
 { #category : 'as yet unclassified' }
 MBoard class >> matrixLarge [
-    "16x16"
-    ^ self matrixWithWidth: 16 height: 16 mineCount: 40
+    "16x16 avec stratégie random"
+    ^ self matrixWithWidth: 16 height: 16
 ]
 
 { #category : 'as yet unclassified' }
 MBoard class >> matrixMedium [
-    "10x10"
-    ^ self matrixWithWidth: 10 height: 10 mineCount: 15
+    "10x10 avec stratégie random"
+    ^ self matrixWithWidth: 10 height: 10
 ]
 
 { #category : 'as yet unclassified' }
 MBoard class >> matrixSmall [
-    "5x5"
-    ^ self matrixWithWidth: 5 height: 5 mineCount: 5
-]
-
-{ #category : 'instance creation' }
-MBoard class >> matrixTest5x5 [
-
-	^ self createWithMatrix:
-		  (CTNewArray2D width: 5 height: 5 tabulate: [ :column :row |
-			   MBox randomCase ])
+    "5x5 avec stratégie random"
+    ^ self matrixWithWidth: 5 height: 5
 ]
 
 { #category : 'as yet unclassified' }
 MBoard class >> matrixVeryLarge [
-    "20x20"
-    ^ self matrixWithWidth: 20 height: 20 mineCount: 70
+    "20x20 avec stratégie random"
+    ^ self matrixWithWidth: 20 height: 20
 ]
 
 { #category : 'as yet unclassified' }
 MBoard class >> matrixWithWidth: width height: height [
-    ^ self matrixWithWidth: width height: height mineCount: (width * height // 6)
+    ^ self matrixWithWidth: width height: height strategy: MRandomMineStrategy new
+
 ]
 
 { #category : 'as yet unclassified' }
-MBoard class >> matrixWithWidth: w height: h mineCount: n [
+MBoard class >> matrixWithWidth: width height: height strategy: aStrategy [
 
-	| matrix board |
-	"1. Créer matrice vide"
-	matrix := CTNewArray2D
-		          width: w
-		          height: h
-		          tabulate: [ :c :r | MSafeBox new ].
-
-
-	"2. Créer un board avec cette matrice"
-	board := self createWithMatrix: matrix.
-
-	"3. Appliquer la stratégie de placement de mines"
-	board configureGridWithMineCount: n.
-
-	"4. Retourner le board configuré"
+	| board randomSeed |
+	board := self new.
+	randomSeed := Time microsecondClockValue \\ 1000000.
+	board initializeWithSize: width height: height.
+	board seed: randomSeed. "Définir le seed"
+	board mineStrategy: aStrategy.
+	aStrategy seed: randomSeed. "Passer le seed à la stratégie"
+	aStrategy placeMinesOn: board.
 	^ board
-]
-
-{ #category : 'as yet unclassified' }
-MBoard class >> replaySavedSetup [
-    lastBoardPlayed ifNil: [ ^ nil ].
-    ^ lastBoardPlayed replaySavedSetup
 ]
 
 { #category : 'accessing' }
@@ -237,13 +182,26 @@ MBoard >> boxesSelect: aBlock [
 { #category : 'player api' }
 MBoard >> clickOnBox: aBox [
 
-	| x y|
+	| x y |
 	gameEnded ifTrue: [ ^ self ].
-	
+
 	x := aBox position x.
 	y := aBox position y.
-	(self boxAt: x at: y).
-	
+	self radarMode ifTrue: [
+			| radarBox |
+			radarBox := self enableRadarForBox: aBox.
+			radarBox useRadar.
+			self radarMode: false.
+			^ self ].
+
+	(self boxAt: x at: y) click
+]
+
+{ #category : 'public api - configure' }
+MBoard >> configureGrid: aMatrix [
+    grid := aMatrix.
+    self boxesDoWithIndices: [ :box :i :j |
+        box setPosition: i@j board: self ]
 ]
 
 { #category : 'as yet unclassified' }
@@ -266,7 +224,33 @@ MBoard >> configureGridWithMineCount: mineCount [
 			y := pos y.
 			matrix at: x @ y put: MMineBox new ].
 	self configureGrid: matrix. "sauvegarder setup pour replay"
-	self savedSetup: (self booleanMatrixFrom: matrix)
+
+	self savedSetup: matrix copy
+]
+
+{ #category : 'as yet unclassified' }
+MBoard >> createMemento [
+    | currentSeed |
+    currentSeed := seed ifNil: [ Time microsecondClockValue \\ 1000000 ].
+    ^ MBoardMemento new
+        width: self width
+        height: self height
+        strategy: self mineStrategy copy
+        seed: currentSeed
+		  magnifier: (self magnifier ifNil: [ 1 ]);
+        yourself
+]
+
+{ #category : 'as yet unclassified' }
+MBoard >> enableRadarForBox: aBox [
+
+	| radarBox |
+	radarBox := MRadarBox new.
+	radarBox decoratedBox: aBox.
+	radarBox board: self.
+	radarBox position: aBox position.
+	self replaceBox: aBox by: radarBox.
+	^ radarBox
 ]
 
 { #category : 'box api' }
@@ -319,7 +303,28 @@ MBoard >> initialize [
 	announcer := Announcer new.
 	gameEnded := false.
 	numberOfSelections := 0.
+	magnifier := 1.  
+    radarMode := false
 
+]
+
+{ #category : 'initialization' }
+MBoard >> initializeWithSize: width height: height [
+
+	| randomSeed |
+	self initialize .
+	randomSeed := Time microsecondClockValue \\ 1000000. "Génère un seed aléatoire"
+	seed := randomSeed.
+
+	grid := CTNewArray2D
+		        width: width
+		        height: height
+		        tabulate: [ :column :row |
+				        | box |
+				        box := MBox safe.
+				        box setPosition: column @ row board: self.
+				        box ].
+	^ self
 ]
 
 { #category : 'accessing' }
@@ -346,19 +351,20 @@ MBoard >> mineCountAroundBox: aBox [
 			   ifFalse: [ 0 ] ]) sum
 ]
 
+{ #category : 'accessing' }
+MBoard >> mineStrategy [
+    ^ mineStrategy ifNil: [ mineStrategy := MRandomMineStrategy new ]
+
+]
+
+{ #category : 'accessing' }
+MBoard >> mineStrategy: aStrategy [
+    mineStrategy := aStrategy
+]
+
 { #category : 'player api' }
 MBoard >> numberOfSelections [
     ^ numberOfSelections.
-]
-
-{ #category : 'accessing' }
-MBoard >> placementStrategy [
-    ^ placementStrategy ifNil: [ placementStrategy := MRandomPlacement new ].
-]
-
-{ #category : 'accessing' }
-MBoard >> placementStrategy: aStrategy [
-    placementStrategy := aStrategy.
 ]
 
 { #category : 'box api' }
@@ -391,14 +397,20 @@ MBoard >> printOn: aStream [
 		i = self width ifFalse: [ aStream	<< Smalltalk os lineEnding ] ]
 ]
 
-{ #category : 'player api' }
-MBoard >> radarScanAt: aBox [
-    "Does not change game state; only announces radar results"
-    | mine |
-    mine := (self boxAt: aBox position x at: aBox position y) isMineBox.
-    ^ aBox announcer
-        announce: (MBoxRadarAnnouncement new box: aBox; isMine: mine; yourself).
-	
+{ #category : 'as yet unclassified' }
+MBoard >> radarCount [
+    "Compter les radars disponibles/utilisés"
+    ^ (self boxesSelect: [ :box | box class = MRadarBox ]) size
+]
+
+{ #category : 'accessing' }
+MBoard >> radarMode [
+    ^ radarMode ifNil: [ radarMode := false ]
+]
+
+{ #category : 'accessing' }
+MBoard >> radarMode: aBoolean [
+    radarMode := aBoolean
 ]
 
 { #category : 'box api' }
@@ -425,6 +437,16 @@ MBoard >> replaySavedSetup [
 ]
 
 { #category : 'as yet unclassified' }
+MBoard >> restoreFromMemento: aMemento [
+    | restoredBoard |
+    restoredBoard := aMemento restoreBoard.
+    grid := restoredBoard grid.
+    mineStrategy := restoredBoard mineStrategy.
+    seed := restoredBoard seed.
+    self configureGrid: grid
+]
+
+{ #category : 'as yet unclassified' }
 MBoard >> revealBoard [
 
 	self boxesDoWithIndices: [ :aBox :i :j |
@@ -442,12 +464,23 @@ MBoard >> rightFlagCountAroundBox: aBox [
 
 { #category : 'accessing' }
 MBoard >> savedSetup [
-    ^ savedSetup
+    ^ self class savedSetup
 ]
 
 { #category : 'accessing' }
 MBoard >> savedSetup: aBoolMatrix [
-    savedSetup := aBoolMatrix.
+    self class savedSetup: aBoolMatrix.
+]
+
+{ #category : 'accessing' }
+MBoard >> seed [
+    ^ seed
+]
+
+{ #category : 'accessing' }
+MBoard >> seed: anInteger [
+    seed := anInteger.
+    self mineStrategy ifNotNil: [ self mineStrategy seed: anInteger ]
 ]
 
 { #category : 'accessing' }

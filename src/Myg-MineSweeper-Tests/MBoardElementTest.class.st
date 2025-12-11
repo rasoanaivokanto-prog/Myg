@@ -13,11 +13,12 @@ Class {
 
 { #category : 'running' }
 MBoardElementTest >> setUp [
-
 	super setUp.
-	board := MBoardElement new game: (MBoard
-			          matrixForField
-			          magnifier: 1)
+    board := MBoardElement new game: (MBoard
+                      matrixForField
+                      magnifier: 1)
+    
+  
 ]
 
 { #category : 'tests' }
@@ -31,70 +32,70 @@ MBoardElementTest >> testAllHiddenAtBeginning [
 MBoardElementTest >> testClickOnMine [
 
 	<skip>
-	| box |
-	self skip.
-	box := board children third.
-	box mine.
-	self
-		assert: box background image
-		equals: (MBoxElement mine scaledToSize: box size)
+    | box |
+    self skip.
+    box := board children third.
+    box mine.
+    self
+        assert: box background image
+        equals: (MBoxElement mine scaledToSize: box size)
 ]
 
 { #category : 'tests - ui' }
 MBoardElementTest >> testClickOnUnknown [
 
-	| box |
-	box := board children first.
-	box box click.
-	self
-		assert: box background paint color
-		equals: Color white darker darker.
-	self assert: box children first text asString equals: '0' 
+	  | box |
+    box := board children first.
+    box box click.
+    self
+        assert: box background paint color
+        equals: Color white darker darker.
+    self assert: box children first text asString equals: '0' 
 ]
 
 { #category : 'tests - ui' }
 MBoardElementTest >> testMouseClickOnMine [
 
-	<skip>
-	| box unk|
-	self skip.
-	box := board children third.
-	box forceLayout.
-	unk := box findMouseEventTargetAt: 200 @ 50.
-	unk mine.
-	self
-		assert: box background image
-		equals: (MBoxElement mine scaledToSize: box size)
+	 <skip>
+    | box unk|
+    self skip.
+    box := board children third.
+    box forceLayout.
+    unk := box findMouseEventTargetAt: 200 @ 50.
+    unk mine.
+    self
+        assert: box background image
+        equals: (MBoxElement mine scaledToSize: box size)
 ]
 
 { #category : 'tests - ui' }
 MBoardElementTest >> testMouseClickOnUnknown [
 
-	| box unk |
-	box := board children first.
-	box forceLayout.
-	unk := box findMouseEventTargetAt: 50 @ 50.
-	unk box click.
-	self
-		assert: unk background paint color
-		equals: Color white darker darker.
-	self assert: box children first text asString equals: '0'
+	  | box unk |
+    box := board children first.
+    box forceLayout.
+    unk := box findMouseEventTargetAt: 50 @ 50.
+    unk box click.
+    self
+        assert: unk background paint color
+        equals: Color white darker darker.
+    self assert: box children first text asString equals: '0'
 ]
 
 { #category : 'tests - ui' }
 MBoardElementTest >> testMouseRightClick [
 
 	<skip>
-	| box unk |
-	self skip.
-	box := board children first.
-	box forceLayout.
-	unk := box findMouseEventTargetAt: 200 @ 50.
-	unk flag.
-	self assert: (box childNamed: 'png' ifFound: [ true ]).
-	self
-		assert: (box childNamed: 'png') background image
-		equals: (MBoxElement flag scaledToSize: box size)
+    | box unk |
+    self skip.
+    box := board children first.
+    box forceLayout.
+    unk := box findMouseEventTargetAt: 200 @ 50.
+    unk flag.
+    self assert: (box childNamed: 'png' ifFound: [ true ]).
+    self
+        assert: (box childNamed: 'png') background image
+        equals: (MBoxElement flag scaledToSize: box size)
 ]
 
 { #category : 'tests - ui' }

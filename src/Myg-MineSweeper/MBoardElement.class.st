@@ -32,16 +32,25 @@ Class {
 		'header',
 		'footer',
 		'gridContainer',
-		'radarMode'
+		'currentMemento'
 	],
 	#category : 'Myg-MineSweeper-UI',
 	#package : 'Myg-MineSweeper',
 	#tag : 'UI'
 }
 
-{ #category : 'instance creation' }
-MBoardElement class >> launchLarge [
-	^ self withMatrixTest5x5WithMagnifier: 2
+{ #category : 'as yet unclassified' }
+MBoardElement class >> launchCrossPattern [
+    "Lancer avec motif en croix"
+    ^ self launchWithStrategy: MCrossMineStrategy new size: 10
+]
+
+{ #category : 'as yet unclassified' }
+MBoardElement class >> launchFixedMines: count size: size [
+    "Lancer avec nombre fixe de mines"
+    | strategy |
+    strategy := MFixedCountMineStrategy new mineCount: count.
+    ^ self launchWithStrategy: strategy size: size
 ]
 
 { #category : 'as yet unclassified' }
@@ -65,14 +74,17 @@ MBoardElement class >> launchMedium10x10WithMagnifier: aNumber [
     ^ self openWithModel: MBoard matrixMedium withMagnifier: aNumber
 ]
 
-{ #category : 'instance creation' }
-MBoardElement class >> launchRegular [
-	^ self withMatrixTest5x5 
-]
-
-{ #category : 'instance creation' }
-MBoardElement class >> launchSmall [
-	^ self withMatrixTest5x5WithMagnifier: 0.5
+{ #category : 'as yet unclassified' }
+MBoardElement class >> launchReproducible [
+    "Lancer avec seed fixe pour rejouabilité"
+    | strategy board |
+    strategy := MRandomMineStrategy new seed: 12345.
+    board := MBoard new.
+    board initializeWithSize: 10 height: 10.
+    board seed: 12345.
+    board mineStrategy: strategy.
+    strategy placeMinesOn: board.
+    ^ self openWithModel: board
 ]
 
 { #category : 'as yet unclassified' }
@@ -83,11 +95,6 @@ MBoardElement class >> launchSmall5x5 [
 { #category : 'as yet unclassified' }
 MBoardElement class >> launchSmall5x5WithMagnifier: aNumber [
     ^ self openWithModel: MBoard matrixSmall withMagnifier: aNumber
-]
-
-{ #category : 'instance creation' }
-MBoardElement class >> launchVeryLarge [
-	^ self withMatrixTest5x5WithMagnifier: 4
 ]
 
 { #category : 'as yet unclassified' }
@@ -109,6 +116,16 @@ MBoardElement class >> launchWithBoard: aBoard [
     ^ element
 ]
 
+{ #category : 'as yet unclassified' }
+MBoardElement class >> launchWithStrategy: aStrategy size: aSize [
+    | board |
+    board := MBoard new.
+    board initializeWithSize: aSize height: aSize.
+    board mineStrategy: aStrategy.
+    aStrategy placeMinesOn: board.
+    ^ self openWithModel: board
+]
+
 { #category : 'instance creation' }
 MBoardElement class >> open [
 	<script>
@@ -116,19 +133,19 @@ MBoardElement class >> open [
 	| butSmall butRegular butLarge butVeryLarge space elt |
 	butSmall := ToButtonModel new.
 	butSmall labelText: ('Small' asRopedText fontSize: 50).
-	butSmall whenClickedDo: [ self launchSmall ].
+	butSmall whenClickedDo: [ self launchSmall5x5 ].
 
 	butRegular := ToButtonModel new.
 	butRegular labelText: ('Regular' asRopedText fontSize: 50).
-	butRegular whenClickedDo: [ self launchRegular ].
+	butRegular whenClickedDo: [ self launchMedium10x10  ].
 
 	butLarge := ToButtonModel new.
 	butLarge labelText: ('Large' asRopedText fontSize: 50).
-	butLarge whenClickedDo: [ self launchLarge ].
+	butLarge whenClickedDo: [ self launchLarge16x16 ].
 
 	butVeryLarge := ToButtonModel new.
 	butVeryLarge labelText: ('Very Large' asRopedText fontSize: 50).
-	butVeryLarge whenClickedDo: [ self launchVeryLarge ].
+	butVeryLarge whenClickedDo: [ self launchVeryLarge20x20 ].
 
 	elt := BlElement new.
 	elt layout: (BlGridLayout horizontal cellSpacing: 5).
@@ -198,42 +215,34 @@ MBoardElement class >> openWithModel: aModel withMagnifier: aNumber [
 	^ space
 ]
 
-{ #category : 'execution' }
-MBoardElement class >> withMatrixForField [
-
-	^ self openWithModel: MBoard matrixForField
-]
-
-{ #category : 'execution' }
-MBoardElement class >> withMatrixForFieldWithMagnifier: aNumber [
-
-	^ self openWithModel: MBoard matrixForField withMagnifier: aNumber 
-]
-
-{ #category : 'execution' }
-MBoardElement class >> withMatrixTest5x5 [
-
-	^ self openWithModel: MBoard matrixTest5x5
-]
-
-{ #category : 'execution' }
-MBoardElement class >> withMatrixTest5x5WithMagnifier: aNumber [
-
-	^ self openWithModel: MBoard matrixSmall withMagnifier: aNumber 
+{ #category : 'adding' }
+MBoardElement >> addRadarButton [
+    | radarBtn |
+    radarBtn := self createSizeButton: '📡 Use Radar' action: [
+        "Activer mode radar - prochain clic utilise le radar"
+        game radarMode: true ].
+    header addChild: radarBtn
 ]
 
 { #category : 'adding' }
-MBoardElement >> addRadarButton [
-    | btn |
-    btn := self createSizeButton: 'Radar' action: [ self toggleRadarMode ].
-    footer addChild: btn.
-
+MBoardElement >> addReplayButton [
+    | replayBtn |
+    replayBtn := self createSizeButton: '🔄 Replay' action: [
+        currentMemento ifNotNil: [
+            | newBoard newElement space |
+            newBoard := MBoard fromMemento: currentMemento.
+            newElement := MBoardElement new game: newBoard; yourself.
+            newElement currentMemento: currentMemento.
+            space := BlSpace new.
+            space root addChild: newElement.
+            space show ]].
+    header addChild: replayBtn
 ]
 
 { #category : 'adding' }
 MBoardElement >> addSizeButtons [
 
-	| btn5 btn10 btn16 btn20 btnReplay |
+	| btn5 btn10 btn16 btn20 |
 	btn5 := self
 		        createSizeButton: '5x5'
 		        action: [ MBoardElement launchSmall5x5 ].
@@ -247,20 +256,11 @@ MBoardElement >> addSizeButtons [
 		         createSizeButton: '20x20'
 		         action: [ MBoardElement launchVeryLarge20x20 ].
 
-	"NOUVEAU BOUTON REPLAY"
-	btnReplay := self createSizeButton: 'Replay' action: [
-			             | newBoard |
-			             newBoard := MBoard replaySavedSetup.
-			             newBoard
-				             ifNil: [
-				             self inform: 'Aucune configuration sauvegardée.' ]
-				             ifNotNil: [ MBoardElement launchWithBoard: newBoard ] ].
-
+	
 	footer addChild: btn5.
 	footer addChild: btn10.
 	footer addChild: btn16.
 	footer addChild: btn20.
-    footer addChild: btnReplay
 ]
 
 { #category : 'as yet unclassified' }
@@ -286,45 +286,54 @@ MBoardElement >> createSizeButton: label action: aBlock [
 ]
 
 { #category : 'accessing' }
+MBoardElement >> currentMemento: aMemento [
+    currentMemento := aMemento
+]
+
+{ #category : 'accessing' }
 MBoardElement >> game [ 
 	^ game
 ]
 
 { #category : 'accessing' }
 MBoardElement >> game: aMBoard [
-     game := aMBoard.
 
-    game announcer
-        when: MBoxClickedAnnouncement
-        send: #updateSelectionsLabel
-        to: self.
-    
-    "Créer le label de sélections"
-    selectionsLabel := BlTextElement new.
-    selectionsLabel text: ('Sélections : 0' asRopedText 
-        fontSize: 16;
-        bold).
-    header addChild: selectionsLabel.
-    
-    "Créer un container pour la grille"
-    gridContainer := BlElement new.
-    gridContainer layout: (BlGridLayout horizontal 
-        columnCount: game width;
-        cellSpacing: 5).
-    gridContainer padding: (BlInsets all: 5 * game magnifier).
-    gridContainer constraintsDo: [ :c | 
-        c horizontal fitContent. 
-        c vertical fitContent ].
-    
-    "Ajouter les boxes à la grille"
-    game grid do: [ :aBox |
-        | boxElement |
-        boxElement := MBoxElement createWithBox: aBox.
-        gridContainer addChild: boxElement ].
-    
-    "Assembler : header + grille + footer"
-    self addChild: gridContainer.
-    self addChild: footer.
+	game := aMBoard.
+	currentMemento := game createMemento.
+	game announcer
+		when: MBoxClickedAnnouncement
+		send: #updateSelectionsLabel
+		to: self.
+
+	"Créer le label de sélections"
+	selectionsLabel := BlTextElement new.
+	selectionsLabel text: ('Sélections : 0' asRopedText
+			 fontSize: 16;
+			 bold).
+	header addChild: selectionsLabel.
+	"ajout des bouton pour rejouer et lancer un radar"
+	self addRadarButton.
+	self addReplayButton.
+
+	"Créer un container pour la grille"
+	gridContainer := BlElement new.
+	gridContainer layout: (BlGridLayout horizontal
+			 columnCount: game width;
+			 cellSpacing: 5).
+	gridContainer padding: (BlInsets all: 5 * game magnifier).
+	gridContainer constraintsDo: [ :c |
+			c horizontal fitContent.
+			c vertical fitContent ].
+
+	"Ajouter les boxes à la grille"
+	game grid do: [ :aBox |
+			| boxElement |
+			boxElement := MBoxElement createWithBox: aBox.
+			gridContainer addChild: boxElement ].
+
+	"Assembler : header + grille + footer"
+	self addChild: gridContainer.
+	self addChild: footer
 ]
 
 { #category : 'initialization' }
@@ -354,17 +363,6 @@ MBoardElement >> initialize [
     
    self addChild: header.
 	self addSizeButtons.
-]
-
-{ #category : 'accessing' }
-MBoardElement >> radarMode: aBoolean [
-    radarMode := aBoolean.
-]
-
-{ #category : 'as yet unclassified' }
-MBoardElement >> toggleRadarMode [
-    self radarMode: (self radarMode not).
-    "Update footer button appearance accordingly"
 ]
 
 { #category : 'as yet unclassified' }
